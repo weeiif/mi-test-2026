@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temario Oposiciones</title>
+    <style>
+        :root { --bg: #ffffff; --accent: #4477ff; --dark: #000; --success: #22c55e; --error: #ef4444; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; padding: 20px; text-align: center; }
+        h1 { font-size: 28px; font-weight: 900; margin-bottom: 30px; text-transform: uppercase; border-bottom: 4px solid #000; display: inline-block; padding: 0 20px; color: #1e293b; }
+        .container { max-width: 600px; margin: auto; }
+        
+        /* BOTONES PRINCIPALES */
+        .btn-tema { background: #fff; color: #000; border: 3px solid #000; padding: 18px 25px; border-radius: 50px; width: 100%; font-weight: 800; cursor: pointer; margin-bottom: 15px; box-shadow: 0 5px 0 #000; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; font-size: 13px; transition: all 0.2s ease; }
+        .btn-tema:hover { transform: scale(1.04); background: #f1f5f9; box-shadow: 0 8px 0 #000; }
+        .btn-tema:active { transform: translateY(4px) scale(1.0); box-shadow: none; }
+
+        .btn-random { background: #facc15; border: 3px solid #000; padding: 15px; border-radius: 15px; font-weight: 900; cursor: pointer; margin-bottom: 30px; width: 100%; box-shadow: 0 5px 0 #000; text-transform: uppercase; }
+        .btn-random:hover { background: #fde047; transform: scale(1.02); }
+
+        /* SELECCIÓN DE TEST */
+        .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .btn-test { background: #4477ff; color: white; border: 3px solid #000; padding: 20px; border-radius: 15px; font-weight: 900; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: all 0.2s ease; }
+        .btn-test:hover { transform: scale(1.05); }
+
+        /* GENERADOR MODAL */
+        .config-card { background: white; border: 3px solid #000; border-radius: 20px; padding: 20px; text-align: left; margin-bottom: 20px; box-shadow: 8px 8px 0 #000; }
+        .check-item { margin-bottom: 10px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+        .check-item input { margin-right: 15px; transform: scale(1.5); }
+
+        /* EXAMEN */
+        .card { border: 3px solid #000; border-radius: 20px; padding: 25px; box-shadow: 8px 8px 0 #000; background: #fff; text-align: left; margin-top: 20px; }
+        .pregunta-texto { background: #bae6fd; padding: 15px; border-radius: 10px; border: 2px solid #000; font-weight: 700; margin-bottom: 20px; color: #0c4a6e; }
+        .opcion { border: 2px solid #000; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-weight: 600; transition: background 0.1s; }
+        .correcta { background: var(--success) !important; color: white; border-color: #166534 !important; }
+        .error { background: var(--error) !important; color: white; border-color: #991b1b !important; }
+        .btn-nav { background: #000; color: #fff; padding: 12px 25px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-volver { background: #ff9800; color: white; border: 3px solid #000; padding: 10px 20px; border-radius: 50px; cursor: pointer; font-weight: bold; margin-bottom: 20px; display: inline-block; box-shadow: 3px 3px 0 #000; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app"></div>
+
+   <script src="preguntas.js"></script>
+    <script src="psicos.js"></script>
+
+    <script>
+        let testActual = []; let falladas = []; let aciertos = 0; let indexPregunta = 0;
+        let fuenteActual = null; // Para saber si estamos en Teoría o Psicos
+
+        // 1. PANTALLA PRINCIPAL: ¿TEORÍA O PSICOS?
+        function renderInicio() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <h1>Oposiciones 2026</h1>
+                <p>Selecciona una categoría:</p>
+                <button class="btn-tema" style="background:#facc15; justify-content:center; height:80px; font-size:20px;" onclick="renderMenuSeccion('teoria')">📚 TEMARIO TEORÍA</button>
+                <button class="btn-tema" style="background:#4477ff; color:white; justify-content:center; height:80px; font-size:20px;" onclick="renderMenuSeccion('psicos')">🧠 PSICOTÉCNICOS</button>
+            `;
+        }
+
+        // 2. MENÚ DE LA SECCIÓN (Lo que tú ya tenías, pero filtrado)
+        function renderMenuSeccion(tipo) {
+            fuenteActual = (tipo === 'teoria') ? datosTemas : datosPsicos;
+            const app = document.getElementById('app');
+            
+            app.innerHTML = `
+                <div class="btn-volver" onclick="renderInicio()">← VOLVER AL INICIO</div>
+                <h1>${tipo === 'teoria' ? 'Teoría' : 'Psicotécnicos'}</h1>
+                
+                <button class="btn-random" onclick="configurarExamen()">🎲 GENERAR EXAMEN ALEATORIO</button>
+                
+                <div id="lista-temas"></div>`;
+
+            const lista = document.getElementById('lista-temas');
+            Object.keys(fuenteActual).forEach(id => {
+                const b = document.createElement('button');
+                b.className = 'btn-tema';
+                b.innerHTML = `<span>${fuenteActual[id].n}</span> <span>→</span>`;
+                b.onclick = () => verSubTests(id);
+                lista.appendChild(b);
+            });
+        }
+        function configurarExamen() {
+            const app = document.getElementById('app');
+            let htmlTemas = '';
+            Object.keys(datosTemas).forEach(id => {
+                // Solo mostrar temas que tienen preguntas
+                const totalPreguntas = datosTemas[id].tests.reduce((acc, t) => acc + t.preguntas.length, 0);
+                if(totalPreguntas > 0) {
+                    htmlTemas += `
+                    <label class="check-item">
+                        <input type="checkbox" value="${id}" checked> ${datosTemas[id].n} (${totalPreguntas} preguntas)
+                    </label>`;
+                }
+            });
+
+            app.innerHTML = `
+                <div class="btn-volver" onclick="renderInicio()">← VOLVER</div>
+                <div class="config-card">
+                    <h3>Personalizar Examen</h3>
+                    <p>Elige los temas:</p>
+                    ${htmlTemas}
+                    <hr>
+                    <p>Nº de preguntas:</p>
+                    <input type="number" id="numPreguntas" value="20" min="5" max="100" style="padding:10px; width:50px; border:2px solid #000; border-radius:10px; font-weight:bold;">
+                    <br><br>
+                    <button class="btn-test" style="width:100%" onclick="generarAleatorio()">EMPEZAR EXAMEN MEZCLADO</button>
+                </div>`;
+        }
+
+        function generarAleatorio() {
+            const seleccionados = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
+            const cantidad = parseInt(document.getElementById('numPreguntas').value);
+            
+            if (seleccionados.length === 0) return alert("Selecciona al menos un tema");
+
+            let todasLasPreguntas = [];
+            seleccionados.forEach(id => {
+                datosTemas[id].tests.forEach(test => {
+                    todasLasPreguntas = todasLasPreguntas.concat(test.preguntas);
+                });
+            });
+
+            if (todasLasPreguntas.length === 0) return alert("No hay preguntas en los temas seleccionados");
+
+            // Mezclar y cortar
+            testActual = todasLasPreguntas.sort(() => Math.random() - 0.5).slice(0, cantidad);
+            falladas = []; aciertos = 0; indexPregunta = 0;
+            verPregunta('random');
+        }
+
+        function verSubTests(id) {
+            const app = document.getElementById('app');
+            const tema = datosTemas[id];
+            app.innerHTML = `<div class="btn-volver" onclick="renderInicio()">← VOLVER</div><h2>${tema.n}</h2><div class="test-grid"></div>`;
+            const grid = app.querySelector('.test-grid');
+            tema.tests.forEach((t, index) => {
+                const b = document.createElement('button'); b.className = 'btn-test';
+                b.innerText = `TEST ${index + 1}`;
+                b.onclick = () => empezarTest(id, index);
+                grid.appendChild(b);
+            });
+        }
+
+        function empezarTest(temaId, testIdx) {
+            testActual = JSON.parse(JSON.stringify(datosTemas[temaId].tests[testIdx].preguntas));
+            falladas = []; aciertos = 0; indexPregunta = 0;
+            verPregunta(temaId);
+        }
+
+        function verPregunta(temaId) {
+            const app = document.getElementById('app');
+            const p = testActual[indexPregunta];
+            app.innerHTML = `
+                <div class="btn-volver" onclick="renderInicio()">← SALIR</div>
+                <div class="card">
+                    <div style="font-size:12px; font-weight:bold; color:#64748b;">PREGUNTA ${indexPregunta + 1} DE ${testActual.length}</div>
+                    <div class="pregunta-texto">${p.q}</div>
+                    <div id="opciones">
+                        ${p.ops.map((o, i) => `<div class="opcion" onclick="validar(${i},${p.c},this)"><b>${String.fromCharCode(65+i)}.</b> ${o}</div>`).join('')}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                        <span>Aciertos: ${aciertos}</span>
+                        ${indexPregunta < testActual.length - 1 
+                            ? `<button class="btn-nav" onclick="indexPregunta++; verPregunta('${temaId}')">Siguiente →</button>`
+                            : `<button class="btn-nav" style="background:var(--accent)" onclick="verResultados('${temaId}')">Finalizar</button>`}
+                    </div>
+                </div>`;
+        }
+
+        function validar(sel, cor, el) {
+            const padre = el.parentNode; if (padre.classList.contains('locked')) return;
+            padre.classList.add('locked');
+            if (sel === cor) { el.classList.add('correcta'); aciertos++; } 
+            else { el.classList.add('error'); padre.children[cor].classList.add('correcta'); falladas.push(testActual[indexPregunta]); }
+        }
+
+        function verResultados(temaId) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="card" style="text-align:center">
+                    <h2>Resultado: ${aciertos} / ${testActual.length}</h2>
+                    <button class="btn-tema" style="justify-content:center" onclick="renderInicio()">Ir al Inicio</button>
+                    ${falladas.length > 0 ? `<button class="btn-tema" style="justify-content:center; background:var(--error); color:#fff" onclick="repasarFallos('${temaId}')">Repasar Fallos (${falladas.length})</button>` : ''}
+                </div>`;
+        }
+
+        function repasarFallos(temaId) { testActual = [...falladas]; falladas = []; aciertos = 0; indexPregunta = 0; verPregunta(temaId); }
+
+        window.onload = renderInicio;
+    </script>
+</body>
+</html>
