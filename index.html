@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oposiciones 2026</title>
     <style>
-        :root { --bg: #f8fafc; --accent: #4477ff; --dark: #000; --success: #22c55e; --error: #ef4444; --yellow: #facc15; }
+        :root { --bg: #f8fafc; --accent: #4477ff; --dark: #000; --success: #22c55e; --error: #ef4444; --yellow: #facc15; --purple: #a855f7; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; text-align: center; color: #1e293b; }
         
         /* TÍTULOS Y CABECERAS */
@@ -20,50 +20,42 @@
         .menu-inicio { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
         
         .btn-oval { 
-            /* Diseño Ovalado */
             padding: 25px 30px; 
             border: 3px solid #000; 
-            border-radius: 50px; /* Bordes totalmente redondeados */
-            
-            /* Tipografía */
+            border-radius: 50px; 
             font-size: 18px; 
             font-weight: 900; 
             text-transform: uppercase;
-            
-            /* Interacción */
             cursor: pointer; 
             transition: all 0.15s ease; 
             display: flex; align-items: center; justify-content: center; gap: 12px;
             width: 100%; box-sizing: border-box;
         }
-        /* Efecto al pulsar */
         .btn-oval:active { transform: translateY(3px); }
 
-        /* Colores específicos */
+        /* Colores específicos de los bloques */
         .btn-oval-teoria { background: var(--yellow); color: #000; }
         .btn-oval-teoria:hover { background: #eab308; }
+
+        .btn-oval-teoria2 { background: var(--purple); color: #fff; }
+        .btn-oval-teoria2:hover { background: #9333ea; }
 
         .btn-oval-psicos { background: var(--accent); color: #fff; }
         .btn-oval-psicos:hover { background: #2563eb; }
 
         /* --- LISTADO Y DESPLEGABLES --- */
         .bloque-container { margin-bottom: 15px; text-align: left; }
-        
-        /* Estilo carpeta principal */
         .btn-bloque { background: #fff; color: #000; border: 3px solid #000; padding: 18px 20px; border-radius: 15px; width: 100%; font-weight: 800; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 14px; text-transform: uppercase; box-sizing: border-box;}
         
-        /* Contenido desplegable */
         .desplegable { display: none; padding: 10px 5px 10px 15px; border-left: 3px dashed #cbd5e1; margin-top: 5px; }
         .tema-item { margin-bottom: 10px; }
         
-        /* Título subtema */
         .btn-tema-header { background: #e2e8f0; border: 2px solid #000; padding: 10px; width: 100%; border-radius: 10px; font-weight: 700; cursor: pointer; text-align: left; font-size: 13px; box-sizing: border-box;}
 
-        /* --- BOTONES DE TEST (CON MEMORIA DE NOTA) --- */
+        /* --- BOTONES DE TEST --- */
         .test-list { display: none; padding: 10px 0; }
         .btn-test { background: #fff; color: #000; border: 2px solid #000; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 8px; cursor: pointer; font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; align-items: center; text-decoration: none; box-sizing: border-box;}
         
-        /* Estilo cuando el test está aprobado/hecho */
         .test-aprobado { border-color: var(--success); background: #f0fdf4; color: #166534; }
         .nota-badge { background: var(--success); color: white; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 900; }
 
@@ -74,12 +66,13 @@
         .opcion { border: 2px solid #000; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-weight: 600; transition: 0.1s; }
         .opcion:hover { background: #f1f5f9; }
         
-        .correcta { background: var(--success) !important; color: white; border-color: #166534 !important; }
-        .error { background: var(--error) !important; color: white; border-color: #991b1b !important; }
+        .locked .opcion { cursor: default; }
+        .locked .opcion:hover { background: inherit; }
+
+        .correcta { background: var(--success) !important; color: white; border-color: #166534 !important; font-weight: 700; }
+        .error { background: var(--error) !important; color: white; border-color: #991b1b !important; font-weight: 700; }
         
         .btn-nav { background: #000; color: #fff; padding: 15px 30px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; display: none; margin-top: 10px; width: 100%; font-size: 16px; text-transform: uppercase;}
-        
-        /* BOTÓN VOLVER */
         .btn-volver-atras { background: #ff9800; color: white; border: 3px solid #000; padding: 10px 20px; border-radius: 50px; cursor: pointer; font-weight: bold; margin-bottom: 25px; display: inline-block; text-decoration: none; font-size: 14px;}
     </style>
 </head>
@@ -88,16 +81,18 @@
 
     <script src="preguntas.js"></script>
     <script src="psicos.js"></script>
+    <script src="preguntas_academia2.js"></script>
 
     <script>
         let testActual = []; let falladas = []; let aciertos = 0; let indexPregunta = 0;
-        let vistaActual = 'inicio'; // 'inicio', 'teoria', 'psicos'
-        let currentTestKey = ""; // Identificador para guardar la nota
+        let vistaActual = 'inicio'; // 'inicio', 'teoria', 'teoria2', 'psicos'
+        let currentTestKey = ""; 
+        let modoRepaso = false; 
 
         function renderApp() {
             const app = document.getElementById('app');
+            modoRepaso = false; 
             
-            // PANTALLA DE INICIO CON BOTONES OVALADOS
             if (vistaActual === 'inicio') {
                 app.innerHTML = `
                     <h1 class="titulo-principal">Oposiciones 2026</h1>
@@ -106,18 +101,25 @@
                         <button class="btn-oval btn-oval-teoria" onclick="irA('teoria')">
                             <span>📚</span> <span>Temario Teoría</span>
                         </button>
+                        <button class="btn-oval btn-oval-teoria2" onclick="irA('teoria2')">
+                            <span>📖</span> <span>Temario Teoría 2</span>
+                        </button>
                         <button class="btn-oval btn-oval-psicos" onclick="irA('psicos')">
                             <span>🧠</span> <span>Psicotécnicos</span>
                         </button>
                     </div>
                 `;
             } 
-            // PANTALLAS DE LISTADO
             else {
+                let nombreEncabezado = '';
+                if(vistaActual === 'teoria') nombreEncabezado = 'Temario Teoría';
+                if(vistaActual === 'teoria2') nombreEncabezado = 'Temario Teoría 2';
+                if(vistaActual === 'psicos') nombreEncabezado = 'Psicotécnicos';
+
                 app.innerHTML = `
                     <div class="btn-volver-atras" onclick="irA('inicio')">← VOLVER AL INICIO</div>
                     <br>
-                    <h2 class="encabezado-seccion">${vistaActual === 'teoria' ? 'Teoría' : 'Psicos'}</h2>
+                    <h2 class="encabezado-seccion">${nombreEncabezado}</h2>
                     <div id="lista-contenido"></div>
                 `;
                 renderLista();
@@ -131,14 +133,22 @@
 
         function renderLista() {
             const contenedor = document.getElementById('lista-contenido');
-            const datos = (vistaActual === 'teoria') ? datosTemas : datosPsicos;
+            
+            let datos;
+            if (vistaActual === 'teoria') datos = datosTemas; // Tu variable original intacta
+            if (vistaActual === 'teoria2') datos = datosTeoriaDos; // La nueva variable
+            if (vistaActual === 'psicos') datos = datosPsicos; // Tus psicos intactos
+
+            if (!datos) {
+                contenedor.innerHTML = `<p style="color:red; font-weight:bold;">Error: No se han encontrado los datos. Revisa el archivo 'preguntas_academia2.js'</p>`;
+                return;
+            }
 
             Object.keys(datos).forEach(id => {
                 const bloque = datos[id];
                 const div = document.createElement('div');
                 div.className = 'bloque-container';
                 
-                // Formato con subtemas (Teoría)
                 if (bloque.subcarpetas) {
                     div.innerHTML = `
                         <button class="btn-bloque" onclick="toggleView('sub-${id}')">
@@ -152,12 +162,11 @@
                                     </button>
                                     <div id="test-${id}-${idx}" class="test-list">
                                         ${sub.tests.map((t, tIdx) => {
-                                            // Creamos una clave única para este test
-                                            const key = `teoria-${id}-${idx}-${tIdx}`;
+                                            const key = `${vistaActual}-${id}-${idx}-${tIdx}`;
                                             const notaGuardada = localStorage.getItem(key);
                                             
                                             return `
-                                                <div class="btn-test ${notaGuardada ? 'test-aprobado' : ''}" onclick="empezarTest('teoria', '${id}', ${idx}, ${tIdx})">
+                                                <div class="btn-test ${notaGuardada ? 'test-aprobado' : ''}" onclick="empezarTest('${vistaActual}', '${id}', ${idx}, ${tIdx})">
                                                     <span>${t.nombre}</span>
                                                     ${notaGuardada ? `<span class="nota-badge">${notaGuardada}%</span>` : '<span>→</span>'}
                                                 </div>
@@ -168,7 +177,6 @@
                             `).join('')}
                         </div>`;
                 } 
-                // Formato directo (Psicos)
                 else {
                     div.innerHTML = `
                         <button class="btn-bloque" onclick="toggleView('sub-${id}')">
@@ -176,12 +184,11 @@
                         </button>
                         <div id="sub-${id}" class="desplegable">
                             ${bloque.tests.map((t, tIdx) => {
-                                // Clave única para psicos
-                                const key = `psicos-${id}-${tIdx}`;
+                                const key = `${vistaActual}-${id}-${tIdx}`;
                                 const notaGuardada = localStorage.getItem(key);
 
                                 return `
-                                    <div class="btn-test ${notaGuardada ? 'test-aprobado' : ''}" onclick="empezarTest('psicos', '${id}', null, ${tIdx})">
+                                    <div class="btn-test ${notaGuardada ? 'test-aprobado' : ''}" onclick="empezarTest('${vistaActual}', '${id}', null, ${tIdx})">
                                         <span>${t.titulo || t.nombre}</span>
                                         ${notaGuardada ? `<span class="nota-badge">${notaGuardada}%</span>` : '<span>→</span>'}
                                     </div>
@@ -194,7 +201,6 @@
         }
 
         // --- LÓGICA DEL TEST ---
-
         function toggleView(id) {
             const el = document.getElementById(id);
             if(!el) return;
@@ -205,10 +211,13 @@
         }
 
         function empezarTest(tipo, bloqueId, subIdx, testIdx) {
-            // Definir clave para guardar nota
             currentTestKey = (subIdx !== null) ? `${tipo}-${bloqueId}-${subIdx}-${testIdx}` : `${tipo}-${bloqueId}-${testIdx}`;
             
-            const fuente = (tipo === 'teoria') ? datosTemas : datosPsicos;
+            let fuente;
+            if (tipo === 'teoria') fuente = datosTemas;
+            if (tipo === 'teoria2') fuente = datosTeoriaDos;
+            if (tipo === 'psicos') fuente = datosPsicos;
+
             let preguntas;
             if (subIdx !== null) {
                 preguntas = fuente[bloqueId].subcarpetas[subIdx].tests[testIdx].preguntas;
@@ -216,46 +225,59 @@
                 preguntas = fuente[bloqueId].tests[testIdx].preguntas;
             }
             testActual = JSON.parse(JSON.stringify(preguntas));
-            falladas = []; aciertos = 0; indexPregunta = 0;
+            falladas = []; aciertos = 0; indexPregunta = 0; modoRepaso = false;
             verPregunta();
         }
 
         function verPregunta() {
             const app = document.getElementById('app');
             const p = testActual[indexPregunta];
+            
+            let botonNavHtml = '';
+            if (indexPregunta < testActual.length - 1) {
+                botonNavHtml = `<button id="next-btn" class="btn-nav" onclick="indexPregunta++; verPregunta()">SIGUIENTE PREGUNTA →</button>`;
+            } else {
+                if (modoRepaso) {
+                    botonNavHtml = `<button id="next-btn" class="btn-nav" style="background:#000" onclick="renderApp()">TERMINAR REPASO</button>`;
+                } else {
+                    botonNavHtml = `<button id="next-btn" class="btn-nav" style="background:var(--accent)" onclick="verResultados()">FINALIZAR Y VER NOTA</button>`;
+                }
+            }
+
             app.innerHTML = `
-                <div class="btn-volver-atras" onclick="renderApp()">← ABANDONAR TEST</div>
+                <div class="btn-volver-atras" onclick="renderApp()">← ${modoRepaso ? 'SALIR DEL REPASO' : 'ABANDONAR TEST'}</div>
                 <div class="card">
-                    <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:10px;">PREGUNTA ${indexPregunta + 1} DE ${testActual.length}</div>
+                    <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:10px;">
+                        ${modoRepaso ? 'REPASO DE FALLOS' : `PREGUNTA ${indexPregunta + 1} DE ${testActual.length}`}
+                    </div>
                     <div class="pregunta-texto">${p.q}</div>
                     <div id="opciones">
                         ${p.ops.map((o, i) => `<div class="opcion" onclick="validar(${i},${p.c},this)"><b>${String.fromCharCode(65+i)}.</b> ${o}</div>`).join('')}
                     </div>
                     <div style="margin-top:20px;">
-                        ${indexPregunta < testActual.length - 1 
-                            ? `<button id="next-btn" class="btn-nav" onclick="indexPregunta++; verPregunta()">SIGUIENTE PREGUNTA →</button>`
-                            : `<button id="next-btn" class="btn-nav" style="background:var(--accent)" onclick="verResultados()">FINALIZAR Y VER NOTA</button>`}
+                        ${botonNavHtml}
                     </div>
                 </div>`;
         }
 
         function validar(sel, cor, el) {
             const padre = el.parentNode;
-            if (padre.classList.contains('locked')) return; // Evitar re-pulsar
+            if (padre.classList.contains('locked')) return; 
             padre.classList.add('locked');
             
             if (sel === cor) { 
                 el.classList.add('correcta'); aciertos++; 
             } else { 
                 el.classList.add('error'); 
-                padre.children[cor].classList.add('correcta'); // Mostrar correcta
-                falladas.push(testActual[indexPregunta]); // Guardar fallo
+                padre.children[cor].classList.add('correcta'); 
+                if (!modoRepaso) {
+                    falladas.push(testActual[indexPregunta]);
+                }
             }
-            document.getElementById('next-btn').style.display = 'block'; // Mostrar botón navegación
+            document.getElementById('next-btn').style.display = 'block'; 
         }
 
         function verResultados() {
-            // Calcular porcentaje y GUARDAR en localStorage
             const porcentaje = Math.round((aciertos / testActual.length) * 100);
             localStorage.setItem(currentTestKey, porcentaje);
 
@@ -275,10 +297,10 @@
         function repasarFallos() {
             testActual = JSON.parse(JSON.stringify(falladas));
             falladas = []; aciertos = 0; indexPregunta = 0;
+            modoRepaso = true; 
             verPregunta();
         }
 
-        // Iniciar la app
         window.onload = renderApp;
     </script>
 </body>
